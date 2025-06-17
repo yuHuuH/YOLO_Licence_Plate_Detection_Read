@@ -14,6 +14,7 @@
       | git add . | cập nhật toàn bộ file mới thêm (vd thêm file lẻ: git add new.py) |
       | git rm example.py | Xóa file example.py (vd nếu xóa nhiều file: git rm new.py example.py) |
       | git commit -m "messega" | Lưu và mô tả thay đổi (phần này chưa lưu lên github)|
+      | git checkout -b origin {ten cua branch} | Tạo branch để lưu thay đổi |
       | git push origin main | Đẩy file lên github |
 
 ### Update local
