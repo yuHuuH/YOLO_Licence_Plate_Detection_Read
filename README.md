@@ -19,3 +19,5 @@
 ### Update local
   - Để cập nhật repo local khớp với github dùng lệnh
     **git pull origin main**
+## Dataset
+  [link](https://www.kaggle.com/datasets/huyyuh/ocr-yolo-tts)
