@@ -5,7 +5,9 @@
   - Sau khi chọn file lưu project sẽ có phần nhập token, tạo token(classic) ở phần [setting](https://github.com/settings/tokens)
 ## Git Commands
   - Để lưu thay đổi trong project Đầu tiên tạo terminal mới
+
     ![image](https://github.com/user-attachments/assets/856dae20-f6ab-4bbe-a8e8-12a4882c3d26)
+
   - Sau đó sử lệnh để lưu:
       | Lệnh  | Mô tả  |
       |-----------|-----------|
@@ -13,3 +15,7 @@
       | git rm example.py | Xóa file example.py (vd nếu xóa nhiều file: git rm new.py example.py) |
       | git commit -m "messega" | Lưu và mô tả thay đổi (phần này chưa lưu lên github)|
       | git push origin main | Đẩy file lên github |
+
+### Update local
+  - Để cập nhật repo local khớp với github dùng lệnh
+    **git pull origin main**
