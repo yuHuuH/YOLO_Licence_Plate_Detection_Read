@@ -17,7 +17,9 @@
       | git push origin main | Đẩy file lên github |
 
 ### Update local
-  - Để cập nhật repo local khớp với github dùng lệnh
+  - Để check local có khớp với hiện tại dùng: 
+    **git status**
+  - Để cập nhật repo local khớp với github dùng lệnh:
     **git pull origin main**
 ## Dataset
   [link](https://www.kaggle.com/datasets/huyyuh/ocr-yolo-tts)
