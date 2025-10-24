@@ -25,20 +25,20 @@ def rotate(
     rot_mat = cv2.getRotationMatrix2D(image_center, angle, 1.0)
     rot_mat[1, 2] += (width - old_width) / 2
     rot_mat[0, 2] += (height - old_height) / 2
-    return cv2.warpAffine(image, rot_mat, (int(round(height)), int(round(width))), borderValue=background)
+    return cv2.warpAffine(image, rot_mat, (int(round(height)), int(round(width))), borderValue=background) # type: ignore
 
 
 def get_deskew(image):
     grayscale = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     angle = determine_skew(grayscale)
-    rotated = rotate(image, angle, (0, 0, 0))
+    rotated = rotate(image, angle, (0, 0, 0)) # type: ignore
     return rotated
 
 # --- PyInstaller Resource Path Helper ---
 def resource_path(relative_path):
     """ Get absolute path to resource, works for dev and for PyInstaller """
     try:
-        base_path = sys._MEIPASS
+        base_path = sys._MEIPASS # type: ignore
     except Exception:
         base_path = os.path.abspath(".")
     return os.path.join(base_path, relative_path)
@@ -51,13 +51,21 @@ except Exception as e:
     messagebox.showerror("Model Load Error", f"Could not load YOLO models: {e}")
     sys.exit(1)
 
-# --- getLPText Function (remains the same) ---
+# --- getLPText Function ---
 def getLPText(plate_crop, plate_ocr):
     """
-    Extracts text from a license plate using OCR after correcting skew.
+    Extracts text from a license plate using OCR.
+    - If plate is wide (width > height * 2), assume single-row and skip deskew.
+    - Otherwise, deskew and apply KMeans-based row separation.
     """
+    height, width = plate_crop.shape[:2]
+    is_single_row = width > (height * 2)
+
+    # --- Only deskew if not single-row ---
+    if not is_single_row:
+        plate_crop = get_deskew(plate_crop)
+
     # Run OCR
-    plate_crop = get_deskew(plate_crop)
     text_plate = plate_ocr(plate_crop, imgsz=640, conf=0.5, verbose=False)
     ocr_pre = text_plate[0]
     id2char = plate_ocr.names
@@ -70,6 +78,13 @@ def getLPText(plate_crop, plate_ocr):
     box_coords = boxes.xyxy.cpu().numpy()
     combined = list(zip(box_coords, cls_ids))
 
+    # --- Single-row plate: simple left-to-right sorting ---
+    if is_single_row:
+        combined.sort(key=lambda x: x[0][0])  # sort by x1
+        detected_text = ''.join(id2char[cls_id] for _, cls_id in combined)
+        return detected_text
+
+    # --- Multi-row plate: use clustering by Y center ---
     y_centers = np.array([[((box[1] + box[3]) / 2)] for box, _ in combined])
     n_clusters = min(2, len(combined))
 
@@ -79,7 +94,7 @@ def getLPText(plate_crop, plate_ocr):
     try:
         kmeans = KMeans(n_clusters=n_clusters, n_init="auto", random_state=42)
         labels = kmeans.fit_predict(y_centers)
-    except Exception as e:
+    except Exception:
         labels = np.zeros(len(combined), dtype=int)
 
     rows = [[] for _ in range(n_clusters)]
@@ -99,8 +114,8 @@ def getLPText(plate_crop, plate_ocr):
         row_text = ''.join(id2char[cls_id] for _, cls_id in row)
         detected_text.append(row_text)
 
-    final_text = ''.join(detected_text)
-    return final_text
+    return ''.join(detected_text)
+
 
 # --- Tracking Classes ---
 class Track:
@@ -274,7 +289,7 @@ class LPRecognitionApp:
                 self._display_image(file_path)
             else:
                 self.label_image.config(image='')
-                self.label_image.image = None
+                self.label_image.image = None # type: ignore
                 self.label_image.config(text="Video file selected. Click Process to start.")
 
     def _is_image_file(self, path):
@@ -305,7 +320,7 @@ class LPRecognitionApp:
         img_tk = ImageTk.PhotoImage(image=img_pil)
 
         self.label_image.config(image=img_tk, text="")
-        self.label_image.image = img_tk
+        self.label_image.image = img_tk # type: ignore
 
     def _display_image_from_array(self, img_array):
         self._display_image(img_array)
@@ -371,7 +386,7 @@ class LPRecognitionApp:
     # --- Image Processing Logic ---
     def _process_image_file(self):
         try:
-            img = cv2.imread(self.input_path)
+            img = cv2.imread(self.input_path) # type: ignore
             if img is None:
                 self.master.after(0, lambda: messagebox.showerror("Error", f"Could not read image: {self.input_path}"))
                 return
@@ -418,7 +433,7 @@ class LPRecognitionApp:
 
     # --- Video Processing Logic (with tracking) ---
     def _process_video_file(self):
-        cap = cv2.VideoCapture(self.input_path)
+        cap = cv2.VideoCapture(self.input_path) # type: ignore
         if not cap.isOpened():
             self.master.after(0, lambda: messagebox.showerror("Error", f"Could not open video file: {self.input_path}"))
             return
@@ -429,10 +444,10 @@ class LPRecognitionApp:
         total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
         fourcc = 0
-        if self.output_video_path.lower().endswith(".mp4"):
-            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-        elif self.output_video_path.lower().endswith(".avi"):
-            fourcc = cv2.VideoWriter_fourcc(*'XVID')
+        if self.output_video_path.lower().endswith(".mp4"): # type: ignore
+            fourcc = cv2.VideoWriter_fourcc(*'mp4v') # type: ignore
+        elif self.output_video_path.lower().endswith(".avi"): # type: ignore
+            fourcc = cv2.VideoWriter_fourcc(*'XVID') # type: ignore
         else:
             self.master.after(0, lambda: messagebox.showerror("Error", "Unsupported output video format. Please save as .mp4 or .avi."))
             cap.release()
