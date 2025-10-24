@@ -3,3 +3,4 @@ numpy==2.2.6
 ultralytics==8.3.156
 scikit-learn==1.6.1
 Pillow
+deskew
