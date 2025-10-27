@@ -13,6 +13,10 @@ import math
 from typing import Tuple, Union
 from deskew import determine_skew
 
+def enhance_image(plate_crop):
+    enhanced_image = cv2.detailEnhance(plate_crop, sigma_s=10, sigma_r=0.15)
+    return enhanced_image
+
 def rotate(
         image: np.ndarray, angle: float, background: Union[int, Tuple[int, int, int]]
 ) -> np.ndarray:
@@ -32,7 +36,19 @@ def get_deskew(image):
     grayscale = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     angle = determine_skew(grayscale)
     rotated = rotate(image, angle, (0, 0, 0)) # type: ignore
+    # if angle < 10:
+    #     return image  
     return rotated
+
+def denoise(img):
+    # Apply denoising
+    denoised_image = cv2.fastNlMeansDenoisingColored(img, None, 10, 10, 7, 21)
+    
+    # Adjust contrast and brightness
+    alpha = 1.5  # Contrast control (1.0-3.0)
+    beta = 20    # Brightness control (0-100)
+    enhanced_image = cv2.convertScaleAbs(denoised_image, alpha=alpha, beta=beta)
+    return enhanced_image
 
 # --- PyInstaller Resource Path Helper ---
 def resource_path(relative_path):
@@ -59,11 +75,10 @@ def getLPText(plate_crop, plate_ocr):
     - Otherwise, deskew and apply KMeans-based row separation.
     """
     height, width = plate_crop.shape[:2]
-    is_single_row = width > (height * 2)
-
-    # --- Only deskew if not single-row ---
-    if not is_single_row:
-        plate_crop = get_deskew(plate_crop)
+    is_single_row = width > (height * 1.5)
+    plate_crop = enhance_image(plate_crop)
+    # if not is_single_row:
+    #     plate_crop = get_deskew(plate_crop)
 
     # Run OCR
     text_plate = plate_ocr(plate_crop, imgsz=640, conf=0.5, verbose=False)
@@ -82,39 +97,48 @@ def getLPText(plate_crop, plate_ocr):
     if is_single_row:
         combined.sort(key=lambda x: x[0][0])  # sort by x1
         detected_text = ''.join(id2char[cls_id] for _, cls_id in combined)
+        if len(detected_text) < 8:
+            plate_crop = get_deskew(plate_crop)
+            plate_crop = denoise(plate_crop)
+            text_plate = plate_ocr(plate_crop, imgsz=640, conf=0.5, verbose=False)
+            ocr_pre = text_plate[0]
+            boxes = ocr_pre.boxes
+            cls_ids = boxes.cls.cpu().numpy().astype(int)
+            box_coords = boxes.xyxy.cpu().numpy()
+            combined = list(zip(box_coords, cls_ids))
+            combined.sort(key=lambda x: x[0][0])  # sort by x1
+            detected_text = ''.join(id2char[cls_id] for _, cls_id in combined)
+            return detected_text
         return detected_text
 
     # --- Multi-row plate: use clustering by Y center ---
-    y_centers = np.array([[((box[1] + box[3]) / 2)] for box, _ in combined])
-    n_clusters = min(2, len(combined))
-
-    if n_clusters == 0:
-        return ""
-
-    try:
-        kmeans = KMeans(n_clusters=n_clusters, n_init="auto", random_state=42)
-        labels = kmeans.fit_predict(y_centers)
-    except Exception:
-        labels = np.zeros(len(combined), dtype=int)
-
-    rows = [[] for _ in range(n_clusters)]
-    for (box, cls_id), label in zip(combined, labels):
+    # Compute middle line (y-coordinate)
+    _, width = plate_crop.shape[:2]
+    height = plate_crop.shape[0]
+    middle_y = height / 2
+    
+    # For each character, compute its vertical center
+    top_row = []
+    bottom_row = []
+    for box, cls_id in combined:
+        y_center = (box[1] + box[3]) / 2
         x1 = box[0]
-        rows[label].append((x1, cls_id))
-
-    if n_clusters > 1:
-        row_avg_y = [np.mean([y_centers[i][0] for i in range(len(labels)) if labels[i] == r]) for r in range(n_clusters)]
-        sorted_rows = [row for _, row in sorted(zip(row_avg_y, rows), key=lambda x: x[0])]
-    else:
-        sorted_rows = rows
-
-    detected_text = []
-    for row in sorted_rows:
-        row.sort(key=lambda item: item[0])
-        row_text = ''.join(id2char[cls_id] for _, cls_id in row)
-        detected_text.append(row_text)
-
-    return ''.join(detected_text)
+        if y_center < middle_y:
+            top_row.append((x1, cls_id))
+        else:
+            bottom_row.append((x1, cls_id))
+    
+    # Sort each row left-to-right
+    top_row.sort(key=lambda item: item[0])
+    bottom_row.sort(key=lambda item: item[0])
+    
+    # Convert class ids to characters
+    top_text = ''.join(id2char[cls_id] for _, cls_id in top_row)
+    bottom_text = ''.join(id2char[cls_id] for _, cls_id in bottom_row)
+    
+    # Combine rows as needed (top first, then bottom)
+    detected_text = top_text + bottom_text
+    return detected_text
 
 
 # --- Tracking Classes ---
