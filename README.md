@@ -32,7 +32,7 @@ alpr = ALPR(ocr_model="global-plates-mobile-vit-v2-model")
 ## Workflow
 
 Detect -> Crop & Read -> Return result
-**Input**: The input and be both image or video:\
+**Input**: The input and be both image or video:
 
 - Images and videos will be processed directly, with videos have option to save as .mp4 for review later
 
