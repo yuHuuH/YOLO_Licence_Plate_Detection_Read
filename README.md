@@ -47,7 +47,7 @@ pip install -r requirements.txt
 After you have installed the required package open the file that contain `model` folder 
 
 ```terminal
-cd your_path\DPL_Project\final
+cd your_path\YOLO Licence Plate Detection & Read\final
 ```
 
 Then run the app.py 
@@ -59,5 +59,5 @@ python app.py
 or
 
 ```terminal
-python your_pathDPL_Project\final\app.py
+python <your_path>\YOLO Licence Plate Detection & Read\final\app.py
 ```
