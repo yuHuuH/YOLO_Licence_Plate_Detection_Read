@@ -97,18 +97,18 @@ def getLPText(plate_crop, plate_ocr):
     if is_single_row:
         combined.sort(key=lambda x: x[0][0])  # sort by x1
         detected_text = ''.join(id2char[cls_id] for _, cls_id in combined)
-        if len(detected_text) < 8:
-            plate_crop = get_deskew(plate_crop)
-            plate_crop = denoise(plate_crop)
-            text_plate = plate_ocr(plate_crop, imgsz=640, conf=0.5, verbose=False)
-            ocr_pre = text_plate[0]
-            boxes = ocr_pre.boxes
-            cls_ids = boxes.cls.cpu().numpy().astype(int)
-            box_coords = boxes.xyxy.cpu().numpy()
-            combined = list(zip(box_coords, cls_ids))
-            combined.sort(key=lambda x: x[0][0])  # sort by x1
-            detected_text = ''.join(id2char[cls_id] for _, cls_id in combined)
-            return detected_text
+        # if len(detected_text) < 8:
+        #     plate_crop = get_deskew(plate_crop)
+        #     plate_crop = denoise(plate_crop)
+        #     text_plate = plate_ocr(plate_crop, imgsz=640, conf=0.5, verbose=False)
+        #     ocr_pre = text_plate[0]
+        #     boxes = ocr_pre.boxes
+        #     cls_ids = boxes.cls.cpu().numpy().astype(int)
+        #     box_coords = boxes.xyxy.cpu().numpy()
+        #     combined = list(zip(box_coords, cls_ids))
+        #     combined.sort(key=lambda x: x[0][0])  # sort by x1
+        #     detected_text = ''.join(id2char[cls_id] for _, cls_id in combined)
+        #     return detected_text
         return detected_text
 
     # --- Multi-row plate: use clustering by Y center ---
