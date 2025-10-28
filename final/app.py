@@ -76,7 +76,7 @@ def getLPText(plate_crop, plate_ocr):
     """
     height, width = plate_crop.shape[:2]
     is_single_row = width > (height * 1.5)
-    plate_crop = enhance_image(plate_crop)
+    # plate_crop = enhance_image(plate_crop)
     # if not is_single_row:
     #     plate_crop = get_deskew(plate_crop)
 
