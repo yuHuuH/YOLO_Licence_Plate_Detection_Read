@@ -61,7 +61,7 @@ def resource_path(relative_path):
 
 # --- Model Loading ---
 try:
-    model = YOLO(resource_path(os.path.join("model", "lp_detect.pt")))
+    model = YOLO(resource_path(os.path.join("model", "op_lp_detect.pt")))
     ocr = YOLO(resource_path(os.path.join("model", "char_detect.pt")))
 except Exception as e:
     messagebox.showerror("Model Load Error", f"Could not load YOLO models: {e}")
