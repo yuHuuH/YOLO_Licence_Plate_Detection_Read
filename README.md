@@ -49,8 +49,8 @@ Notes: If you plan to use GPU acceleration, install the appropriate torch + CUDA
 How the application works (behavior matched to code)
 - Launch: run the GUI with:
 
-```
-python final\app.py
+```python
+final\app.py
 ```
 
 - Browse File: click "Browse File" to select an image or a video (supported extensions: jpg, jpeg, png, bmp, mp4, avi, mov, webm).
@@ -79,26 +79,3 @@ Examples (quick test)
 - Process the repository example image with the GUI: run the app and choose
   - [example/input/image.jpg](<D:/FPT/Git test/YOLO_Licence_Plate_Detection_Read.worktrees/update-md-professionalism/example/input/image.jpg>)
 - Process the repository example video with the GUI and save annotated output to [example/output/video.mp4](<D:/FPT/Git test/YOLO_Licence_Plate_Detection_Read.worktrees/update-md-professionalism/example/output/video.mp4>)
-
-Troubleshooting
-- Model load errors: confirm model files exist in final/Model and that the filenames are correct (the app attempts to load model/op_lp_detect.pt and model/char_detect.pt relative to its resource path). On Windows the filesystem is case-insensitive; if packaging with PyInstaller preserve the model files in the bundle.
-- Video writer errors: if OpenCV cannot create the output video writer, try a different extension (.mp4 vs .avi) or change codecs on your system.
-- Slow performance on CPU: consider running on a machine with a CUDA-capable GPU and the appropriate PyTorch/CUDA build.
-- Poor OCR/recognition: ensure models were trained for Vietnamese plates and that crops are reasonable resolution and not heavily blurred.
-
-Contributing
-- Suggested next steps to improve the project:
-  - Add a command-line interface (argparse) if headless / scripted operation is required
-  - Add unit tests around detection→OCR→stabilization logic
-  - Add a script to download or verify model files and to document model versions
-  - Add a simple headless mode that writes per-frame JSON results for easier automation
-
-License & Contact
-- Add a LICENSE file to this repository and include maintainer contact information (email or GitHub handle) here.
-
----
-
-If you would like, the repository can be updated to:
-- Add a CLI/argparse wrapper around final/app.py to support direct command-line processing
-- Add a headless script that outputs JSON results per frame
-- Normalize model file paths (e.g., use final/Model vs final/model consistently) — I can make these changes on request.
