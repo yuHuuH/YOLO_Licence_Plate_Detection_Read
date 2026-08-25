@@ -1,81 +1,502 @@
 # License Plate Detection & Recognition
 
-This repository provides a desktop GUI application (Tkinter) that detects and recognizes Vietnamese license plates using YOLO object detection and a YOLO-based character recognizer.
+A desktop application for **Vietnamese license plate detection and recognition** using YOLO-based object detection and character recognition. The application provides a Tkinter graphical interface for processing images and videos, with support for license plate tracking, OCR stabilization, annotated output, and license plate export.
 
-Key features
-- Graphical application (Tkinter) with image preview and progress UI
-- Detects license plates in images and video frames using an ultralytics YOLO detector
-- Per-plate OCR using a second YOLO model (characters as classes)
-- Simple tracking and result stabilization across frames
-- Optionally save annotated video and export unique detected license plates to a text file
+## Features
 
-Files of interest
-- [final/app.py](<D:/FPT/Git test/YOLO_Licence_Plate_Detection_Read.worktrees/update-md-professionalism/final/app.py>) — main GUI application and processing logic
-- [final/Model/](<D:/FPT/Git test/YOLO_Licence_Plate_Detection_Read.worktrees/update-md-professionalism/final/Model/>) — expected model files (see below)
-- [requirements.txt](<D:/FPT/Git test/YOLO_Licence_Plate_Detection_Read.worktrees/update-md-professionalism/requirements.txt>) — Python dependencies
-- [example/input/](<D:/FPT/Git test/YOLO_Licence_Plate_Detection_Read.worktrees/update-md-professionalism/example/input/>) — example image and video for quick testing
-- [example/output/](<D:/FPT/Git test/YOLO_Licence_Plate_Detection_Read.worktrees/update-md-professionalism/example/output/>) — example outputs
+* **License Plate Detection**
 
-Models and where they are loaded
-- The application loads YOLO models using the ultralytics package from the application resource path. The code attempts to load:
-  - model/op_lp_detect.pt (detector)
-  - model/char_detect.pt (OCR/character detector)
+  * Detects Vietnamese license plates in images and video frames using an Ultralytics YOLO model.
+* **Character Recognition**
 
-On Windows the repository includes models under final\Model (capital M). The app uses a resource helper to support both running from source and from a PyInstaller bundle.
+  * Performs per-plate OCR using a second YOLO model trained to detect individual characters.
+  * Reconstructs license plate text by ordering detected characters spatially.
+  * Supports both single-row and multi-row license plates.
+* **Video Tracking**
 
-Included model files (in this repo)
-- final/Model/op_lp_detect.pt
-- final/Model/lp_detect.pt
-- final/Model/char_detect.pt
+  * Tracks detected license plates across consecutive frames using IoU-based matching.
+  * Stabilizes OCR results across frames to reduce recognition noise.
+* **Graphical User Interface**
 
-Requirements
-- Python 3.8+ recommended
-- Install dependencies:
+  * Built with Tkinter.
+  * Provides file selection, image preview, video-processing progress, and result display.
+* **Annotated Output**
 
+  * Displays detected license plates and recognized text on processed images and video frames.
+  * Supports saving processed videos to a user-selected output path.
+* **License Plate Export**
+
+  * Exports unique, confirmed license plate numbers detected during video processing to a `.txt` file.
+
+---
+
+## Project Structure
+
+```text
+.
+├── final/
+│   ├── app.py
+│   └── Model/
+│       ├── op_lp_detect.pt
+│       ├── lp_detect.pt
+│       └── char_detect.pt
+│
+├── example/
+│   ├── input/
+│   │   ├── image.jpg
+│   │   └── video.mp4
+│   │
+│   └── output/
+│       └── video.mp4
+│
+└── requirements.txt
 ```
+
+### Important Files
+
+| File / Directory   | Description                                                                    |
+| ------------------ | ------------------------------------------------------------------------------ |
+| `final/app.py`     | Main Tkinter application, detection, OCR, tracking, and video-processing logic |
+| `final/Model/`     | Directory containing the YOLO model weights                                    |
+| `op_lp_detect.pt`  | License plate detection model used by the application                          |
+| `char_detect.pt`   | Character detection model used for OCR                                         |
+| `lp_detect.pt`     | Additional license plate model included in the repository                      |
+| `requirements.txt` | Python dependencies                                                            |
+| `example/input/`   | Sample image and video for testing                                             |
+| `example/output/`  | Example processed output                                                       |
+
+> **Note:** The default application pipeline loads `op_lp_detect.pt` and `char_detect.pt`. The included `lp_detect.pt` model is not loaded by the default inference workflow.
+
+---
+
+## Requirements
+
+### Software
+
+* Python **3.8+**
+* Tkinter
+* OpenCV
+* Ultralytics
+* PyTorch
+
+### Python Dependencies
+
+Install the required packages with:
+
+```bash
 pip install -r requirements.txt
 ```
 
-requirements.txt includes (representative):
-- opencv-python
-- numpy
-- ultralytics
-- scikit-learn
-- Pillow
-- deskew
+The project includes dependencies such as:
 
-Notes: If you plan to use GPU acceleration, install the appropriate torch + CUDA build compatible with your hardware and the ultralytics / YOLO requirements.
+* `opencv-python`
+* `numpy`
+* `ultralytics`
+* `scikit-learn`
+* `Pillow`
 
-How the application works (behavior matched to code)
-- Launch: run the GUI with:
+For GPU acceleration, install a compatible **PyTorch + CUDA** build for your hardware and ensure it is compatible with the installed Ultralytics environment.
 
-```python
-final\app.py
+---
+
+## Model Files
+
+The application expects the following model files:
+
+```text
+final/
+└── Model/
+    ├── op_lp_detect.pt
+    └── char_detect.pt
 ```
 
-- Browse File: click "Browse File" to select an image or a video (supported extensions: jpg, jpeg, png, bmp, mp4, avi, mov, webm).
-- Process File: for images the app runs detection and OCR and immediately shows annotated image and detected plate strings in the GUI.
-- For video files the app prompts for an output path (asks where to save the processed video). The app then processes frames, runs the detector and OCR, performs simple IoU-based tracking, and stabilizes OCR results per-track.
-- When video processing finishes the app offers to save all unique detected license plates to a text file.
+The application includes resource-path handling to support locating model files when running:
 
-Implementation details pulled from the code
-- Model inference parameters: imgsz=640, conf=0.5 (used for both detector and OCR calls)
-- OCR: the char-detection model returns per-character class ids; the app maps class ids to characters and sorts characters left-to-right (or by row for multi-row plates)
-- Deskew helper: deskew.determine_skew is imported and used in rotate/deskew helper functions (deskew is required)
-- Tracking & stabilization:
-  - Tracker class uses IoU matching and Track objects to track plates across frames
-  - Default tracker thresholds in code: iou_threshold=0.5, max_age=3, min_hits=3
-  - A track is considered "confirmed" when hits >= min_hits (default 3)
-  - Stabilized plate text is the most-common string from recent OCR results for that track
-  - The app only treats stabilized strings of length 8 or 9 characters as valid when adding to the unique list (this is implemented in the video loop)
+* Directly from the source repository
+* From a PyInstaller-generated application bundle
 
-Input and output expectations
-- Input: image files (.jpg/.png/.bmp) or video files (.mp4/.avi/.mov/.webm)
-- Interactive output: annotated image preview for single images; live annotated frames and progress bar for video
-- Saved output (video): user-specified MP4/AVI (the writer chooses codec based on extension)
-- Saved LP list: user can save a .txt file listing all unique, confirmed license plates detected during a video run
+### Model Roles
 
-Examples (quick test)
-- Process the repository example image with the GUI: run the app and choose
-  - [example/input/image.jpg](<D:/FPT/Git test/YOLO_Licence_Plate_Detection_Read.worktrees/update-md-professionalism/example/input/image.jpg>)
-- Process the repository example video with the GUI and save annotated output to [example/output/video.mp4](<D:/FPT/Git test/YOLO_Licence_Plate_Detection_Read.worktrees/update-md-professionalism/example/output/video.mp4>)
+| Model             | Purpose                                                   |
+| ----------------- | --------------------------------------------------------- |
+| `op_lp_detect.pt` | Detects license plate regions                             |
+| `char_detect.pt`  | Detects individual characters inside license plates       |
+| `lp_detect.pt`    | Additional license plate model included in the repository |
+
+---
+
+## How It Works
+
+The application uses a two-stage YOLO pipeline:
+
+```text
+Input Image / Video
+        │
+        ▼
+License Plate Detection
+        │
+        ▼
+Plate Region Cropping
+        │
+        ▼
+Character Detection
+        │
+        ▼
+Character Class Mapping
+        │
+        ▼
+Character Ordering
+        │
+        ▼
+License Plate Text
+```
+
+For video input, an additional tracking and stabilization stage is applied:
+
+```text
+Video Frames
+     │
+     ▼
+License Plate Detection
+     │
+     ▼
+IoU-Based Tracking
+     │
+     ▼
+Per-Plate Character Recognition
+     │
+     ▼
+OCR Result Stabilization
+     │
+     ▼
+Unique License Plate Collection
+```
+
+---
+
+## Detection
+
+The application uses `op_lp_detect.pt` to detect license plate regions.
+
+Default inference parameters:
+
+```text
+Image size: 640
+Confidence threshold: 0.5
+```
+
+The same inference configuration is used for the character detection model.
+
+---
+
+## Character Recognition
+
+Each detected license plate is cropped and passed to the `char_detect.pt` model.
+
+The character detector returns individual character detections containing:
+
+* Character class ID
+* Bounding box
+* Confidence score
+
+The application maps each class ID to its corresponding character and sorts the detected characters spatially to reconstruct the license plate string.
+
+For multi-row license plates, character positions are analyzed by row before determining the final reading order.
+
+---
+
+## Video Tracking
+
+Video processing uses a lightweight IoU-based tracker to associate license plate detections across consecutive frames.
+
+Default tracker parameters:
+
+| Parameter         |    Default |
+| ----------------- | ---------: |
+| IoU threshold     |      `0.5` |
+| Maximum track age | `3` frames |
+| Minimum hits      |        `3` |
+
+A track becomes **confirmed** after receiving at least three successful detections.
+
+This allows the application to maintain a consistent identity for the same license plate across multiple frames.
+
+---
+
+## OCR Stabilization
+
+OCR predictions may vary between frames because of:
+
+* Motion blur
+* Lighting changes
+* Occlusion
+* Camera movement
+* Small or low-resolution plates
+* Temporary detection errors
+
+To reduce these variations, the application stores recent OCR results for each tracked plate and selects the **most frequently occurring result** as the stabilized license plate number.
+
+For example:
+
+```text
+Frame 1 → 51A12345
+Frame 2 → 51A12345
+Frame 3 → 51A12345
+Frame 4 → 51A1234S
+Frame 5 → 51A12345
+```
+
+The stabilized result becomes:
+
+```text
+51A12345
+```
+
+During video processing, only stabilized strings with **8 or 9 characters** are considered valid for the unique license plate collection.
+
+## Usage
+
+### 1. Install Dependencies
+
+Clone or download the repository and install the required packages:
+
+```bash
+pip install -r requirements.txt
+```
+
+### 2. Verify Model Files
+
+Make sure the required model files are located at:
+
+```text
+final/Model/op_lp_detect.pt
+final/Model/char_detect.pt
+```
+
+### 3. Launch the Application
+
+From the project root:
+
+```bash
+python final/app.py
+```
+
+### 4. Select an Input File
+
+Click **Browse File** and select an image or video.
+
+### Supported Image Formats
+
+```text
+.jpg
+.jpeg
+.png
+.bmp
+```
+
+### Supported Video Formats
+
+```text
+.mp4
+.avi
+.mov
+.webm
+```
+
+---
+
+## Image Processing
+
+For image input:
+
+1. Click **Browse File**.
+2. Select an image.
+3. Start processing.
+4. The application detects license plates.
+5. Each detected plate is passed to the character recognition model.
+6. The annotated image and recognized plate numbers are displayed in the GUI.
+
+---
+
+## Video Processing
+
+For video input:
+
+1. Click **Browse File**.
+2. Select a supported video.
+3. Choose an output location when prompted.
+4. The application processes the video frame by frame.
+5. License plates are detected and tracked.
+6. Character recognition is performed for each detected plate.
+7. OCR results are stabilized across frames.
+8. The annotated video is saved to the selected output path.
+9. After processing, the application can export unique detected license plates to a `.txt` file.
+
+---
+
+## Example
+
+The repository contains sample input files for quick testing.
+
+### Example Image
+
+```text
+example/input/image.jpg
+```
+
+Run the application and select the image through **Browse File**.
+
+### Example Video
+
+```text
+example/input/video.mp4
+```
+
+The processed video can be saved to:
+
+```text
+example/output/video.mp4
+```
+
+The application allows the output location to be selected through the save dialog.
+
+---
+
+## Output
+
+### Image Output
+
+For image processing, the application provides:
+
+* Annotated image preview
+* License plate bounding boxes
+* Recognized license plate text
+
+### Video Output
+
+For video processing, the application provides:
+
+* Annotated video frames
+* License plate tracking
+* OCR results
+* Processing progress
+* Saved output video
+* Optional unique license plate list
+
+Example license plate export:
+
+```text
+51A12345
+59B67890
+62C123456
+```
+
+The actual results depend on the input media and model performance.
+
+---
+
+## Performance Considerations
+
+Processing performance depends on:
+
+* CPU/GPU hardware
+* PyTorch configuration
+* CUDA availability
+* Input resolution
+* Video frame rate
+* Number of license plates per frame
+* YOLO model architecture
+* Image quality
+
+Recognition accuracy can also be affected by:
+
+* Motion blur
+* Poor lighting
+* Extreme viewing angles
+* Occlusion
+* Low-resolution license plates
+* Reflections
+* Dirty or damaged plates
+
+For faster inference, a compatible NVIDIA GPU with CUDA-enabled PyTorch can be used.
+
+---
+
+## Troubleshooting
+
+### Model Not Found
+
+Verify that the required files exist:
+
+```text
+final/Model/op_lp_detect.pt
+final/Model/char_detect.pt
+```
+
+If running a packaged application, verify that the model files were included in the PyInstaller build and that the resource-path logic points to the correct location.
+
+### Dependency Errors
+
+Reinstall the project dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+If you encounter PyTorch or CUDA errors, verify that your PyTorch installation is compatible with your GPU, CUDA environment, Python version, and Ultralytics version.
+
+### Poor Detection or OCR Results
+
+Recognition performance may decrease when license plates are:
+
+* Too small
+* Blurred
+* Severely rotated
+* Partially occluded
+* Poorly illuminated
+* Overexposed or underexposed
+
+Improving input quality or retraining/fine-tuning the YOLO models with a more representative dataset may improve results.
+
+---
+
+## Technology Stack
+
+| Technology           | Purpose                                   |
+| -------------------- | ----------------------------------------- |
+| **Python**           | Application development                   |
+| **Ultralytics YOLO** | License plate and character detection     |
+| **PyTorch**          | Deep learning inference                   |
+| **OpenCV**           | Image and video processing                |
+| **Tkinter**          | Desktop graphical interface               |
+| **NumPy**            | Numerical processing                      |
+| **Pillow**           | Image handling and GUI integration        |
+| **scikit-learn**     | Supporting machine-learning functionality |
+
+---
+
+## Tags & Keywords
+
+### Core Technologies
+
+`Python` · `YOLO` · `Ultralytics` · `PyTorch` · `OpenCV` · `Tkinter`
+
+### Computer Vision
+
+`Computer Vision` · `Object Detection` · `OCR` · `Character Recognition` · `Image Processing` · `Object Tracking` · `Video Processing`
+
+### Application Domain
+
+`License Plate Detection` · `License Plate Recognition` · `Automatic License Plate Recognition` · `ALPR` · `ANPR` · `Vietnamese License Plates`
+
+### Machine Learning
+
+`Deep Learning` · `Machine Learning` · `YOLO Object Detection` · `License Plate OCR` · `Real-Time Detection` · `Video Analytics`
+
+## License
+
+This project is licensed under the MIT License.
+
+## Disclaimer
+
+This project is intended for **research, educational, and demonstration purposes**. License plate recognition performance depends on the quality of the input data and the models used. Ensure that any deployment complies with applicable privacy, data protection, and local regulations concerning the collection and processing of vehicle identification information.
